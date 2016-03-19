@@ -7,6 +7,12 @@ use std::ptr;
 #[allow(dead_code, unused_attributes, bad_style)]
 mod ffi;
 
+#[cfg(target_pointer_width = "64")]
+type PtrType = u64;
+
+#[cfg(target_pointer_width = "32")]
+type PtrType = u32;
+
 #[link(name = "asound")]
 extern { }
 
@@ -122,6 +128,7 @@ impl PCM {
 }
 
 impl PCM {
+    
     pub fn write_interleaved<T: Copy>(&mut self, buffer: &[T]) -> Result<usize, isize> {
         let channels = self.channels;
 
@@ -129,7 +136,7 @@ impl PCM {
         assert_eq!(::std::mem::size_of::<T>(), self.sample_fmt.size());
 
         Ok(unsafe {
-            let frames = ffi::snd_pcm_writei(self.i, buffer.as_ptr() as *const libc::c_void, buffer.len() as u32 / channels as u32);
+            let frames = ffi::snd_pcm_writei(self.i, buffer.as_ptr() as *const libc::c_void, buffer.len() as PtrType / channels as PtrType);
             if frames < 0 {
                 alsa_ok!(ffi::snd_pcm_recover(self.i, frames as libc::c_int, 0)) as usize
             } else {
